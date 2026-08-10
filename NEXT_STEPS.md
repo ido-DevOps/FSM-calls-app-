@@ -1,33 +1,49 @@
 # What you need to do
 
-Written 2026-08-10 while you were away. Everything here needs *your* hands —
-credentials, an account, or a decision. Nothing below is blocked on me.
+Written 2026-08-10. Everything here needs *your* hands — credentials, an
+account, or a decision. Nothing below is blocked on me.
+
+**Right now, in order:**
+
+1. `git push` — only this doc's edits are unpushed. All code fixes are on `main`.
+2. **Merge all four open Dependabot PRs** — #16 supabase 2.112.0, #14 typescript
+   5.9.3, #13 tailwindcss 3.4.19, #12 github-actions group. All green.
+   - #12 bumps `supabase/setup-cli` v1 → v3, the action pinned in §4d. CI #21
+     passed on that PR *including* the database job, so the v3 action with
+     `version: 2.111.0` is already proven. Safe.
+   - #14 was the flaky one; it's green now that the CLI is pinned.
+3. Protect `main` so the checks can't be bypassed. See §2.
+4. Then the real decisions: §4a tenancy, §4b photo privacy, §4d test coverage.
+
+Resolved on their own, no action needed:
+
+- **eslint-config-expo 57.0.1** — auto-closed once the ignore rule landed.
+- **zustand 5.0.14** — closed without merging. `main` is still on `^4.5.5`, so
+  the untested runtime major did *not* land. If Dependabot reopens it, the
+  advice in §4d still stands: test the three roles by hand first.
 
 ---
 
-## 1. Push the code (5 min)
+## 1. ~~Push the code~~ ✅ DONE — but there are unpushed commits
 
-The repo is already wired up locally: git initialised, remote added, 9 commits,
-branch renamed to `main`. There's no `gh` CLI and no stored credentials on this
-machine, so the push is yours.
+You pushed, CI ran, and `main` is green. `.env` stayed untracked; no credentials
+are in any commit.
+
+**Still outstanding:** commits made after that push are sitting locally. There's
+no `gh` CLI or stored credentials on this machine, so pushing is always yours:
 
 ```bash
 cd "C:\Users\manun\Projects\solaris-fsm"
-git push -u origin main
+git push
 ```
 
-If it rejects because the GitHub repo already has a README or licence commit:
+Check what's pending at any time with:
 
 ```bash
-git pull --rebase origin main
-git push -u origin main
+git log --oneline origin/main..HEAD
 ```
 
-**`.env` is gitignored and I verified it is not tracked.** No credentials are in
-any commit.
-
-The moment this lands, CI runs on its own — `.github/workflows/ci.yml` triggers
-on push to `main` and on every PR. Nothing to enable.
+That should be empty. If it isn't, those commits haven't reached CI yet.
 
 ---
 
@@ -116,11 +132,13 @@ this should become a private bucket with signed URLs.
 
 ---
 
-## 4c. Dependabot opened 5 PRs that can never merge — push the fix
+## 4c. ✅ RESOLVED — Dependabot was proposing SDK-breaking upgrades
 
-First push worked and **CI passed on `main`** (all four jobs green). But
-Dependabot immediately opened five PRs proposing upgrades that are wrong for
-Expo SDK 51, and CI correctly failed every one:
+**This is already fixed and pushed.** Kept for the record, because the reasoning
+matters if Dependabot ever starts opening unmergeable PRs again.
+
+After the first push, Dependabot opened five PRs proposing upgrades that are
+wrong for Expo SDK 51, and CI correctly failed every one:
 
 | PR | Proposed | Why CI rejected it |
 |---|---|---|
@@ -135,14 +153,8 @@ must only move via `npx expo install --fix` during a deliberate SDK upgrade.
 `.github/dependabot.yml` now excludes the SDK-managed set, and drift is caught
 instead by `npx expo install --check` in the CI audit job.
 
-**Push it, and Dependabot will close those PRs itself** (it auto-closes PRs for
-newly-ignored dependencies):
-
-```bash
-git push
-```
-
-If any linger after a few minutes, close them manually — do not merge them.
+Dependabot closed those five itself once the config landed (it auto-closes PRs
+for newly-ignored dependencies). Nothing left to do here.
 
 Also fixed: the **Dependency Audit** job showed a red X on your otherwise-green
 run. It's informational by design, but a failed step next to passing jobs makes
