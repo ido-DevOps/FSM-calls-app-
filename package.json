@@ -8,7 +8,14 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "eslint ."
+    "lint": "eslint . --ext .ts,.tsx",
+    "typecheck": "tsc --noEmit",
+    "bundle:check": "expo export --platform android --output-dir .bundle-check --clear",
+    "db:start": "supabase start",
+    "db:reset": "supabase db reset",
+    "db:types": "supabase gen types typescript --local",
+    "test:db": "psql \"postgresql://postgres:postgres@127.0.0.1:54322/postgres\" -v ON_ERROR_STOP=1 -f supabase/tests/security.sql",
+    "verify": "npm run lint && npm run typecheck"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "1.23.1",
@@ -36,6 +43,8 @@
   "devDependencies": {
     "@babel/core": "^7.24.0",
     "@types/react": "~18.2.79",
+    "eslint": "^8.57.1",
+    "eslint-config-expo": "^7.1.2",
     "supabase": "^2.111.0",
     "tailwindcss": "3.4.1",
     "typescript": "~5.6.3"

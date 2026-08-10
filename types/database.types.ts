@@ -1,4 +1,4 @@
-﻿// ============================================================================
+// ============================================================================
 // Solaris FSM — Database Types
 //
 // GENERATED from the live schema, do not hand-edit the Database type below.
@@ -16,6 +16,9 @@
 // checking of column names or RPC arguments.
 // ============================================================================
 
+// >>> GENERATED START — everything between these markers is the verbatim
+// output of `npm run db:types`. Do not hand-edit; CI diffs it against a fresh
+// generation and fails if they drift.
 export type Json =
   | string
   | number
@@ -473,6 +476,8 @@ export const Constants = {
 } as const
 
 
+
+// <<< GENERATED END
 
 // ============================================================================
 // Convenience aliases — what the app actually imports.

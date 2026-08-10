@@ -1,0 +1,38 @@
+version: 2
+updates:
+  # Expo pins exact versions per SDK, so unattended major bumps of the Expo
+  # packages break the build more often than they help. Security updates still
+  # come through; feature bumps are grouped and left for a human to review
+  # alongside an SDK upgrade.
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      dev-tooling:
+        patterns:
+          - "eslint*"
+          - "@types/*"
+          - "typescript"
+      expo-sdk:
+        patterns:
+          - "expo"
+          - "expo-*"
+          - "react-native"
+          - "react-native-*"
+          - "@react-native*"
+    ignore:
+      # Managed by `npx expo install` / the SDK upgrade process, not Dependabot.
+      - dependency-name: "expo"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-native"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
