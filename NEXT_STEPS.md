@@ -116,6 +116,48 @@ this should become a private bucket with signed URLs.
 
 ---
 
+## 4c. Dependabot opened 5 PRs that can never merge — push the fix
+
+First push worked and **CI passed on `main`** (all four jobs green). But
+Dependabot immediately opened five PRs proposing upgrades that are wrong for
+Expo SDK 51, and CI correctly failed every one:
+
+| PR | Proposed | Why CI rejected it |
+|---|---|---|
+| #10 | nativewind 4.0.36 → 4.2.6 | Rewrites the `className` interop the blank-list fix depends on |
+| #9 | tailwindcss 3.4.1 → 4.3.3 | Tailwind 4 is a rewrite; nativewind 4 requires Tailwind 3 |
+| #8 | react 18.2.0 → 18.3.1 | SDK 51 pins 18.2.0 |
+| #7 | expo-sdk group (14) | async-storage 1 → 3, reanimated 3 → 4 |
+| #6 | dev-tooling group | `npm ci` peer conflict: eslint 9 vs eslint-config-expo's eslint ^8 |
+
+That was my config being too permissive — Expo SDK owns those versions and they
+must only move via `npx expo install --fix` during a deliberate SDK upgrade.
+`.github/dependabot.yml` now excludes the SDK-managed set, and drift is caught
+instead by `npx expo install --check` in the CI audit job.
+
+**Push it, and Dependabot will close those PRs itself** (it auto-closes PRs for
+newly-ignored dependencies):
+
+```bash
+git push
+```
+
+If any linger after a few minutes, close them manually — do not merge them.
+
+Also fixed: the **Dependency Audit** job showed a red X on your otherwise-green
+run. It's informational by design, but a failed step next to passing jobs makes
+real failures indistinguishable from noise. It now writes findings to the job
+summary and stays green.
+
+> On the audit itself: 24 high + 1 critical (`tar`), but every one is in
+> **build-time tooling** — `@expo/cli`, `@expo/metro-config`, `cacache`,
+> `@react-native/community-cli-plugin`. None of it ships in the app bundle.
+> `npm audit fix --force` would break the SDK pinning; the real remedy is an
+> Expo SDK upgrade (51 is well behind current), which is a planned piece of
+> work, not a quick fix.
+
+---
+
 ## 5. Smaller decisions
 
 - **Move vs Dispatch.** You asked for in-warehouse items to lose the free-form

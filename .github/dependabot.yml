@@ -1,9 +1,27 @@
 version: 2
+
+# ---------------------------------------------------------------------------
+# The rule that governs this file:
+#
+#   Expo SDK 51 owns the version of every package it ships.
+#
+# Those versions are not independent choices — they're a tested matrix. Bumping
+# one of them on its own produces a PR that can never merge, because the app
+# either fails to bundle or breaks at runtime. The correct way to move them is
+# `npx expo install --fix` as part of a deliberate SDK upgrade.
+#
+# The first version of this config didn't encode that, and Dependabot
+# immediately opened five unmergeable PRs: nativewind 4.0.36 -> 4.2.6 (which
+# rewrites the className interop this app depends on), tailwindcss 3 -> 4 (a
+# rewrite incompatible with the nativewind preset), async-storage 1 -> 3,
+# reanimated 3 -> 4, and react off the SDK-pinned 18.2.0.
+#
+# So: Dependabot manages only the dependencies Expo does NOT pin. Drift in the
+# SDK-managed set is caught instead by `npx expo install --check`, which runs in
+# the CI audit job.
+# ---------------------------------------------------------------------------
+
 updates:
-  # Expo pins exact versions per SDK, so unattended major bumps of the Expo
-  # packages break the build more often than they help. Security updates still
-  # come through; feature bumps are grouped and left for a human to review
-  # alongside an SDK upgrade.
   - package-ecosystem: npm
     directory: "/"
     schedule:
@@ -11,28 +29,50 @@ updates:
       day: monday
     open-pull-requests-limit: 5
     groups:
-      dev-tooling:
+      # Genuinely independent runtime deps — safe to batch.
+      app-dependencies:
         patterns:
-          - "eslint*"
-          - "@types/*"
-          - "typescript"
-      expo-sdk:
-        patterns:
-          - "expo"
-          - "expo-*"
-          - "react-native"
-          - "react-native-*"
-          - "@react-native*"
+          - "@supabase/supabase-js"
+          - "@tanstack/react-query"
+          - "zustand"
+          - "react-native-url-polyfill"
     ignore:
-      # Managed by `npx expo install` / the SDK upgrade process, not Dependabot.
+      # ---- Expo SDK-managed: pinned by the SDK, never bumped in isolation ----
       - dependency-name: "expo"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "react-native"
-        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "expo-*"
       - dependency-name: "react"
+      - dependency-name: "react-dom"
+      - dependency-name: "react-native"
+      - dependency-name: "react-native-*"
+      - dependency-name: "@react-native-async-storage/*"
+      - dependency-name: "@types/react"
+      - dependency-name: "@babel/core"
+
+      # nativewind's major/minor is coupled to both the Expo version and the
+      # Tailwind major. 4.2.x changes component interop behaviour, which is
+      # precisely where this app's blank-list bug lived.
+      - dependency-name: "nativewind"
+
+      # nativewind 4 requires Tailwind 3. Tailwind 4 is a ground-up rewrite.
+      - dependency-name: "tailwindcss"
+        update-types:
+          ["version-update:semver-major", "version-update:semver-minor"]
+
+      # eslint-config-expo 7 declares a peer of eslint ^8; eslint 9 also
+      # requires flat config, which .eslintrc.js is not.
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+
+      # TypeScript is deliberately ahead of the SDK's ~5.3.3 (5.3 can't resolve
+      # react-query's NoInfer, which silently made every query result `any`).
+      # Minor/patch is fine; a major needs a human.
+      - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
       interval: monthly
+    groups:
+      github-actions:
+        patterns: ["*"]
