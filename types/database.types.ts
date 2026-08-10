@@ -1,130 +1,493 @@
-// ============================================================================
+﻿// ============================================================================
 // Solaris FSM — Database Types
-// Mirrors supabase/migrations/20260101000000_init_schema.sql
+//
+// GENERATED from the live schema, do not hand-edit the Database type below.
+// Regenerate after any migration with:
+//
+//     npx supabase gen types typescript --local > types/database.types.ts
+//
+// (then re-append the convenience aliases at the bottom of this file)
+//
+// This file used to be hand-written and was subtly malformed: postgrest-js
+// requires each table to carry a `Relationships` key and the schema to carry
+// `Views`/`Functions`. Without them the schema failed its `GenericSchema`
+// constraint, so `.insert()` resolved to `never[]`, `.update()` to `never`,
+// and every row type to `never` — 38 TypeScript errors, and zero real
+// checking of column names or RPC arguments.
 // ============================================================================
 
-export type UserRole = "admin" | "warehouse_manager" | "technician";
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
-export type CallStatus =
-  | "open"
-  | "in_progress"
-  | "pending_parts"
-  | "completed"
-  | "cancelled";
-
-export type ItemStatus =
-  | "in_warehouse"
-  | "with_technician"
-  | "installed"
-  | "defective_returned";
-
-export type PhotoType =
-  | "before_repair"
-  | "defective_part"
-  | "new_part"
-  | "production_proof"
-  | "general";
-
-export interface Profile {
-  id: string; // uuid, FK -> auth.users.id
-  full_name: string | null;
-  role: UserRole;
-  phone: string | null;
-  created_at: string; // timestamptz
-}
-
-export interface InventoryItem {
-  id: string; // uuid
-  serial_number: string;
-  model_name: string;
-  category: string | null;
-  status: ItemStatus;
-  current_owner_id: string | null; // uuid, FK -> profiles.id
-  created_at: string; // timestamptz
-}
-
-export interface ServiceCall {
-  id: string; // uuid
-  call_number: string; // e.g. "SC-000123"
-  customer_name: string;
-  address: string | null;
-  gps_lat: number | null;
-  gps_lng: number | null;
-  status: CallStatus;
-  assigned_technician_id: string | null; // uuid, FK -> profiles.id
-  work_description: string | null;
-  created_at: string; // timestamptz
-  closed_at: string | null; // timestamptz
-}
-
-export interface CallPhoto {
-  id: string; // uuid
-  call_id: string; // uuid, FK -> service_calls.id
-  photo_type: PhotoType;
-  image_url: string;
-  uploaded_at: string; // timestamptz
-}
-
-export interface ComponentReplacement {
-  id: string; // uuid
-  call_id: string; // uuid, FK -> service_calls.id
-  old_item_serial: string | null;
-  new_item_id: string | null; // uuid, FK -> inventory_items.id
-  technician_id: string | null; // uuid, FK -> profiles.id
-  replaced_at: string; // timestamptz
-}
-
-// ============================================================================
-// Supabase-style generated Database interface
-// Enables: createClient<Database>(url, key)
-// ============================================================================
-
-export interface Database {
+export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
-      profiles: {
-        Row: Profile;
-        Insert: Partial<Omit<Profile, "id">> & { id: string };
-        Update: Partial<Profile>;
-      };
-      inventory_items: {
-        Row: InventoryItem;
-        Insert: Partial<Omit<InventoryItem, "id" | "created_at">> & {
-          serial_number: string;
-          model_name: string;
-        };
-        Update: Partial<InventoryItem>;
-      };
-      service_calls: {
-        Row: ServiceCall;
-        Insert: Partial<
-          Omit<ServiceCall, "id" | "call_number" | "created_at">
-        > & {
-          customer_name: string;
-        };
-        Update: Partial<ServiceCall>;
-      };
       call_photos: {
-        Row: CallPhoto;
-        Insert: Partial<Omit<CallPhoto, "id" | "uploaded_at">> & {
-          call_id: string;
-          image_url: string;
-        };
-        Update: Partial<CallPhoto>;
-      };
+        Row: {
+          call_id: string
+          id: string
+          image_url: string
+          photo_type: Database["public"]["Enums"]["photo_type"]
+          uploaded_at: string
+        }
+        Insert: {
+          call_id: string
+          id?: string
+          image_url: string
+          photo_type?: Database["public"]["Enums"]["photo_type"]
+          uploaded_at?: string
+        }
+        Update: {
+          call_id?: string
+          id?: string
+          image_url?: string
+          photo_type?: Database["public"]["Enums"]["photo_type"]
+          uploaded_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_photos_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "service_calls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      component_models: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          model_name: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          model_name: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          model_name?: string
+        }
+        Relationships: []
+      }
       component_replacements: {
-        Row: ComponentReplacement;
-        Insert: Partial<Omit<ComponentReplacement, "id" | "replaced_at">> & {
-          call_id: string;
-        };
-        Update: Partial<ComponentReplacement>;
-      };
-    };
+        Row: {
+          call_id: string
+          id: string
+          new_item_id: string | null
+          old_item_serial: string | null
+          replaced_at: string
+          technician_id: string | null
+        }
+        Insert: {
+          call_id: string
+          id?: string
+          new_item_id?: string | null
+          old_item_serial?: string | null
+          replaced_at?: string
+          technician_id?: string | null
+        }
+        Update: {
+          call_id?: string
+          id?: string
+          new_item_id?: string | null
+          old_item_serial?: string | null
+          replaced_at?: string
+          technician_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "component_replacements_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "service_calls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "component_replacements_new_item_id_fkey"
+            columns: ["new_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "component_replacements_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_items: {
+        Row: {
+          category: string | null
+          created_at: string
+          current_owner_id: string | null
+          id: string
+          model_name: string
+          serial_number: string
+          status: Database["public"]["Enums"]["item_status"]
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          current_owner_id?: string | null
+          id?: string
+          model_name: string
+          serial_number: string
+          status?: Database["public"]["Enums"]["item_status"]
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          current_owner_id?: string | null
+          id?: string
+          model_name?: string
+          serial_number?: string
+          status?: Database["public"]["Enums"]["item_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_items_current_owner_id_fkey"
+            columns: ["current_owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string | null
+          id: string
+          phone: string | null
+          role: Database["public"]["Enums"]["user_role"]
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string | null
+          id: string
+          phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+        }
+        Update: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+        }
+        Relationships: []
+      }
+      service_calls: {
+        Row: {
+          address: string | null
+          assigned_technician_id: string | null
+          call_number: string
+          closed_at: string | null
+          created_at: string
+          customer_name: string
+          gps_lat: number | null
+          gps_lng: number | null
+          id: string
+          status: Database["public"]["Enums"]["call_status"]
+          work_description: string | null
+        }
+        Insert: {
+          address?: string | null
+          assigned_technician_id?: string | null
+          call_number?: string
+          closed_at?: string | null
+          created_at?: string
+          customer_name: string
+          gps_lat?: number | null
+          gps_lng?: number | null
+          id?: string
+          status?: Database["public"]["Enums"]["call_status"]
+          work_description?: string | null
+        }
+        Update: {
+          address?: string | null
+          assigned_technician_id?: string | null
+          call_number?: string
+          closed_at?: string | null
+          created_at?: string
+          customer_name?: string
+          gps_lat?: number | null
+          gps_lng?: number | null
+          id?: string
+          status?: Database["public"]["Enums"]["call_status"]
+          work_description?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_calls_assigned_technician_id_fkey"
+            columns: ["assigned_technician_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      current_user_role: {
+        Args: never
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
+      log_component_replacement: {
+        Args: {
+          p_call_id: string
+          p_new_item_id: string
+          p_old_item_serial: string
+          p_technician_id: string
+        }
+        Returns: {
+          call_id: string
+          id: string
+          new_item_id: string | null
+          old_item_serial: string | null
+          replaced_at: string
+          technician_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "component_replacements"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+    }
     Enums: {
-      user_role: UserRole;
-      call_status: CallStatus;
-      item_status: ItemStatus;
-      photo_type: PhotoType;
-    };
-  };
+      call_status:
+        | "open"
+        | "in_progress"
+        | "pending_parts"
+        | "completed"
+        | "cancelled"
+      item_status:
+        | "in_warehouse"
+        | "with_technician"
+        | "installed"
+        | "defective_returned"
+      photo_type:
+        | "before_repair"
+        | "defective_part"
+        | "new_part"
+        | "production_proof"
+        | "general"
+      user_role: "admin" | "warehouse_manager" | "technician"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
 }
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
+  public: {
+    Enums: {
+      call_status: [
+        "open",
+        "in_progress",
+        "pending_parts",
+        "completed",
+        "cancelled",
+      ],
+      item_status: [
+        "in_warehouse",
+        "with_technician",
+        "installed",
+        "defective_returned",
+      ],
+      photo_type: [
+        "before_repair",
+        "defective_part",
+        "new_part",
+        "production_proof",
+        "general",
+      ],
+      user_role: ["admin", "warehouse_manager", "technician"],
+    },
+  },
+} as const
+
+
+
+// ============================================================================
+// Convenience aliases — what the app actually imports.
+// Derived from the generated types above, so they can never drift again.
+// ============================================================================
+
+export type UserRole = Database["public"]["Enums"]["user_role"];
+export type CallStatus = Database["public"]["Enums"]["call_status"];
+export type ItemStatus = Database["public"]["Enums"]["item_status"];
+export type PhotoType = Database["public"]["Enums"]["photo_type"];
+
+export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+export type ServiceCall = Database["public"]["Tables"]["service_calls"]["Row"];
+export type InventoryItem = Database["public"]["Tables"]["inventory_items"]["Row"];
+export type CallPhoto = Database["public"]["Tables"]["call_photos"]["Row"];
+export type ComponentReplacement =
+  Database["public"]["Tables"]["component_replacements"]["Row"];
+export type ComponentModel = Database["public"]["Tables"]["component_models"]["Row"];
