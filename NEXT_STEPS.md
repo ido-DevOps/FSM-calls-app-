@@ -158,6 +158,48 @@ summary and stays green.
 
 ---
 
+## 4d. The biggest remaining gap: nothing tests that the app *works*
+
+After the second push, `main` is green and the SDK-breaking PRs are gone. Two
+new ones failed, and they failed for very different reasons — worth knowing,
+because the distinction is the whole point of having a pipeline:
+
+- **eslint-config-expo 7.1.2 → 57.0.1** — a *real* incompatibility. They
+  switched to a year-based version scheme; 57 is the flat-config generation and
+  needs eslint 9 plus an `eslint.config.js`. Now ignored for majors. Migrating
+  is deliberate work, not a bump.
+- **typescript 5.6.3 → 5.9.3** — **not a real failure.** Lint, typecheck and
+  both bundles passed; the job died on "Set up Supabase CLI". That step used
+  `version: latest`, resolving over the network every run. Now pinned to
+  `2.111.0`. A flake that looks like a failure is expensive — it sends you
+  debugging the wrong change. **That PR is probably safe to merge once CI
+  re-runs.**
+
+But the one that should get your attention is the one that **passed**:
+
+> **zustand 4.5.7 → 5.0.14 went green.** That's a major version of a runtime
+> dependency.
+
+CI proved it compiles, type-checks and bundles. It did **not** prove the app
+still works, because there are no tests of app behaviour — no unit tests, no
+component tests, nothing that renders a screen or exercises a flow. For a major
+bump of the library holding your auth session, that gap is the difference
+between "green" and "safe".
+
+Concretely: zustand 5 changes store/selector semantics. This app's usage looks
+compatible (named `create`, individual selectors, `getState()` in the auth
+listener), but "looks compatible" is exactly the standard that produced the
+blank-list bug.
+
+**Recommendation:** before merging that PR, sign in as each of the three roles
+and confirm sessions and redirects still behave. Longer term, the highest-value
+addition to this pipeline is a test layer — Jest + React Native Testing Library
+for the auth guards, role routing, and the dispatch/receive state machine. Say
+the word and I'll build it; it's a real piece of work, not a config tweak, which
+is why I haven't done it unprompted.
+
+---
+
 ## 5. Smaller decisions
 
 - **Move vs Dispatch.** You asked for in-warehouse items to lose the free-form

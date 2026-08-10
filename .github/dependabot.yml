@@ -63,6 +63,14 @@ updates:
       - dependency-name: "eslint"
         update-types: ["version-update:semver-major"]
 
+      # eslint-config-expo jumped 7.1.2 -> 57.0.1 (they switched to a
+      # year-based scheme). 57 is the flat-config generation and needs
+      # eslint 9 + an eslint.config.js, so it fails `npm run lint` outright.
+      # Moving to it means migrating off .eslintrc.js — a deliberate change,
+      # not a dependency bump.
+      - dependency-name: "eslint-config-expo"
+        update-types: ["version-update:semver-major"]
+
       # TypeScript is deliberately ahead of the SDK's ~5.3.3 (5.3 can't resolve
       # react-query's NoInfer, which silently made every query result `any`).
       # Minor/patch is fine; a major needs a human.
