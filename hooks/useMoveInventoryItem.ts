@@ -14,11 +14,25 @@ export function useMoveInventoryItem() {
 
   return useMutation({
     mutationFn: async ({ itemId, status, ownerId }: MoveInventoryItemInput) => {
-      const { error } = await supabase
+      // `.select()` matters for more than the return value: RLS doesn't raise
+      // on UPDATE, it just narrows the row set to zero. Without asking for the
+      // updated row back, PostgREST answers 204 with error === null, so a
+      // blocked write would report success and the UI would refetch unchanged
+      // data — the modal closes and nothing happens.
+      const { data, error } = await supabase
         .from("inventory_items")
         .update({ status, current_owner_id: ownerId })
-        .eq("id", itemId);
+        .eq("id", itemId)
+        .select()
+        .maybeSingle();
+
       if (error) throw error;
+      if (!data) {
+        throw new Error(
+          "That item couldn't be updated — it may have been deleted, or you may not have permission to change it."
+        );
+      }
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inventory_items"] });

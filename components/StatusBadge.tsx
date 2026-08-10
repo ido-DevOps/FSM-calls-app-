@@ -37,8 +37,18 @@ const STYLES: Record<
   },
 };
 
+const FALLBACK = {
+  bg: "bg-slate-100",
+  dot: "bg-slate-400",
+  text: "text-slate-600",
+  label: "Unknown",
+};
+
 export function StatusBadge({ status }: { status: CallStatus }) {
-  const s = STYLES[status];
+  // Degrade instead of throwing: an unrecognised status (a new enum value
+  // added to the DB before the app ships) would otherwise blow up on
+  // `s.bg` and take out the whole list it's rendered in.
+  const s = STYLES[status] ?? { ...FALLBACK, label: status ?? "Unknown" };
   return (
     <View
       className={`flex-row items-center self-start rounded-full px-2.5 py-1 ${s.bg}`}

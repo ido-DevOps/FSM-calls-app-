@@ -12,8 +12,23 @@ export function useDeleteInventoryItem() {
 
   return useMutation({
     mutationFn: async (itemId: string) => {
-      const { error } = await supabase.from("inventory_items").delete().eq("id", itemId);
+      // Same reason as useMoveInventoryItem: a DELETE blocked by RLS returns
+      // 204 with no error, so without `.select()` a refused delete looks
+      // exactly like a successful one.
+      const { data, error } = await supabase
+        .from("inventory_items")
+        .delete()
+        .eq("id", itemId)
+        .select()
+        .maybeSingle();
+
       if (error) throw error;
+      if (!data) {
+        throw new Error(
+          "That item couldn't be deleted — it may already be gone, or you may not have permission to delete it."
+        );
+      }
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inventory_items"] });
