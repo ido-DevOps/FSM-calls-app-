@@ -1,6 +1,18 @@
 # Solaris FSM — Session Pickup
 
-Last session ended: 2026-08-10 (audit + fix session).
+Last session ended: 2026-08-10 (audit + fix + CI/CD session).
+
+> **👉 Things that need your hands (push, GitHub settings, credentials,
+> two security decisions) are in [NEXT_STEPS.md](./NEXT_STEPS.md).**
+>
+> **Confirmed fixed:** the blank Admin Overview list — you verified it renders.
+>
+> **CI/CD is in place** (`.github/workflows/ci.yml`): lint + typecheck, a
+> migrations-from-scratch + security regression job, Android/iOS bundle checks,
+> and a dependency audit. It runs as soon as the repo is pushed.
+>
+> **Warehouse stock now only leaves via Dispatch** with serial confirmation —
+> the free-form Move action is gone from `in_warehouse` rows.
 
 **The project is now a git repo.** Every fix below is a separate commit, so
 anything can be reverted individually:

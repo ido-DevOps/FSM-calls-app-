@@ -1,0 +1,149 @@
+# What you need to do
+
+Written 2026-08-10 while you were away. Everything here needs *your* hands —
+credentials, an account, or a decision. Nothing below is blocked on me.
+
+---
+
+## 1. Push the code (5 min)
+
+The repo is already wired up locally: git initialised, remote added, 9 commits,
+branch renamed to `main`. There's no `gh` CLI and no stored credentials on this
+machine, so the push is yours.
+
+```bash
+cd "C:\Users\manun\Projects\solaris-fsm"
+git push -u origin main
+```
+
+If it rejects because the GitHub repo already has a README or licence commit:
+
+```bash
+git pull --rebase origin main
+git push -u origin main
+```
+
+**`.env` is gitignored and I verified it is not tracked.** No credentials are in
+any commit.
+
+The moment this lands, CI runs on its own — `.github/workflows/ci.yml` triggers
+on push to `main` and on every PR. Nothing to enable.
+
+---
+
+## 2. Protect `main` (2 min, GitHub web UI)
+
+CI is pointless if it can be bypassed. On GitHub:
+
+**Settings → Branches → Add branch ruleset** (or "Add rule" on older UI) for `main`:
+
+- ☑ Require a pull request before merging
+- ☑ Require status checks to pass → select **Lint & Types**, **Migrations & Security Tests**, **Bundle (Android + iOS)**
+- ☑ Require branches to be up to date before merging
+
+Leave the `Dependency Audit` check unselected — it's deliberately non-blocking.
+
+---
+
+## 3. Decide: is this app going to production for real?
+
+If yes, these are the blockers. None are things I should decide for you.
+
+### 3a. A hosted Supabase project
+
+Right now everything points at a local Supabase on your LAN IP, which has
+changed three times. Production needs a hosted project:
+
+1. Create one at [supabase.com](https://supabase.com/dashboard).
+2. Push the schema:
+   ```bash
+   supabase link --project-ref <your-project-ref>
+   supabase db push
+   ```
+   Do **not** run `supabase db reset` against it — that wipes data. And do not
+   run `seed.sql` there; it creates test accounts with a known password.
+3. Put the hosted URL + anon key into EAS (step 3b), not into `.env`.
+
+### 3b. EAS build credentials
+
+`eas.json` and `.github/workflows/release.yml` are ready, but the release
+workflow needs a token:
+
+1. `npx eas login` then `npx eas init` (links the project, sets an EAS project ID).
+2. Create a token at <https://expo.dev/settings/access-tokens>.
+3. GitHub → **Settings → Secrets and variables → Actions → New repository secret**
+   - Name: `EXPO_TOKEN`
+   - Value: the token
+4. Set the app's runtime env as EAS secrets (these get baked into the build):
+   ```bash
+   npx eas secret:create --name EXPO_PUBLIC_SUPABASE_URL --value https://<ref>.supabase.co
+   npx eas secret:create --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value <anon-key>
+   ```
+
+Then builds are Actions → **Release Build** → Run workflow. It's manual on
+purpose; producing an installable artifact shouldn't happen on every push.
+
+> ⚠️ `EXPO_PUBLIC_*` values are inlined into the shipped JS bundle. The anon key
+> is designed to be public so that's fine — but never put a service-role key or
+> any real secret behind that prefix.
+
+---
+
+## 4. Two security decisions only you can make
+
+These are real exposures I deliberately did **not** change, because each one
+alters app behaviour and I couldn't test the result with you gone.
+
+### 4a. Tenancy is UI-only
+
+Every signed-in user can `SELECT` **all** service calls — every customer's name,
+street address, GPS coordinates and work notes — plus all inventory, all photos,
+and all replacement history. The screens filter to "my calls" client-side; the
+database does not.
+
+For a field-service app with real customer addresses this is likely a privacy
+problem (and plausibly a GDPR one). The fix is scoped policies, but it must be
+done carefully: `useAllServiceCalls`, `useWarehouseInventory` and
+`useComponentReplacements` all embed `profiles`, so restricting `profiles`
+SELECT is exactly what would introduce a null-embed bug that doesn't exist
+today. Say the word and I'll do it properly with tests.
+
+### 4b. Job-site photos are world-readable
+
+The `call-photos` bucket is public, so anyone with the URL can view them, signed
+in or not. Uploads also aren't path-scoped. If photos can show customer property,
+this should become a private bucket with signed URLs.
+
+---
+
+## 5. Smaller decisions
+
+- **Move vs Dispatch.** You asked for in-warehouse items to lose the free-form
+  Move, and that's done — they can now only leave via Dispatch with serial
+  confirmation. Note the adjacent case I left alone: an item that's
+  `defective_returned` or `installed` can still be Moved straight to
+  "with technician" without a serial check. Tell me if that should be closed too.
+- **The old duplicate folder** `C:\Users\manun\Projects\fsm softwear` is now
+  ~4 days stale and missing everything. Safe to delete whenever.
+- **`supabase/seed.sql` creates four accounts with the password `Password123!`.**
+  Fine locally, dangerous if it ever runs against a hosted database.
+
+---
+
+## Quick reference
+
+```bash
+npm run verify      # lint + typecheck — same gate CI runs
+npm run db:reset    # replay migrations + seed
+npm run test:db     # security regression suite (needs psql on PATH)
+npm run db:types    # regenerate DB types after a migration
+```
+
+On Windows without `psql` installed, run the suite through Docker instead:
+
+```bash
+docker exec -i supabase_db_fsm_softwear psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/security.sql
+```
+
+**After any migration**, run `npm run db:types` and commit the result — CI diffs
+the committed types against a fresh generation and fails if they drift.
