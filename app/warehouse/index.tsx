@@ -296,13 +296,25 @@ export default function WarehouseInventoryScreen() {
                   </Pressable>
                 ) : null}
 
-                <Pressable
-                  onPress={() => openMove(item)}
-                  accessibilityRole="button"
-                  className="rounded-full border border-slate-300 px-3 py-1.5"
-                >
-                  <Text className="text-xs font-medium text-slate-600">Move</Text>
-                </Pressable>
+                {/*
+                  Warehouse stock deliberately has NO free-form Move. Handing a
+                  part to a technician must go through Dispatch, which forces a
+                  scan-or-type serial match against the physical part before it
+                  commits (see warehouse/transfer.tsx). Move skips that check
+                  entirely, so leaving it on in_warehouse rows would be a
+                  one-tap bypass of the whole verification step.
+                  Move stays available for the other statuses as the correction
+                  escape hatch.
+                */}
+                {item.status !== "in_warehouse" ? (
+                  <Pressable
+                    onPress={() => openMove(item)}
+                    accessibilityRole="button"
+                    className="rounded-full border border-slate-300 px-3 py-1.5"
+                  >
+                    <Text className="text-xs font-medium text-slate-600">Move</Text>
+                  </Pressable>
+                ) : null}
 
                 <Pressable
                   onPress={() => confirmDelete(item)}
