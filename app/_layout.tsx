@@ -1,4 +1,7 @@
 import "../global.css";
+// Registers `className` support for third-party components (SafeAreaView).
+// Must be imported before any screen renders — see the file for why.
+import "../lib/nativewind-interop";
 import { useState } from "react";
 import type { PropsWithChildren } from "react";
 import { ActivityIndicator, View } from "react-native";
