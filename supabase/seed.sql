@@ -17,7 +17,10 @@
 
 -- ---------------------------------------------------------------------------
 -- Auth users  →  profiles rows are created automatically by the
--- on_auth_user_created trigger, using role/full_name from raw_user_meta_data.
+-- on_auth_user_created trigger. full_name comes from raw_user_meta_data; the
+-- role comes from raw_app_meta_data, which — unlike raw_user_meta_data — the
+-- client SDK cannot write, so a self-registering user can't pick their own
+-- role. See migration 20260101060000_security_hardening.sql.
 -- ---------------------------------------------------------------------------
 
 insert into auth.users (
@@ -32,8 +35,8 @@ insert into auth.users (
     'authenticated', 'authenticated',
     'admin@solarisfsm.test',
     crypt('Password123!', gen_salt('bf')),
-    now(), '{"provider":"email","providers":["email"]}',
-    '{"full_name":"Priya Nair","role":"admin"}',
+    now(), '{"provider":"email","providers":["email"],"role":"admin"}',
+    '{"full_name":"Priya Nair"}',
     now(), now(), '', '', '', ''
   ),
   (
@@ -42,8 +45,8 @@ insert into auth.users (
     'authenticated', 'authenticated',
     'warehouse@solarisfsm.test',
     crypt('Password123!', gen_salt('bf')),
-    now(), '{"provider":"email","providers":["email"]}',
-    '{"full_name":"Marcus Webb","role":"warehouse_manager"}',
+    now(), '{"provider":"email","providers":["email"],"role":"warehouse_manager"}',
+    '{"full_name":"Marcus Webb"}',
     now(), now(), '', '', '', ''
   ),
   (
@@ -52,8 +55,8 @@ insert into auth.users (
     'authenticated', 'authenticated',
     'technician@solarisfsm.test',
     crypt('Password123!', gen_salt('bf')),
-    now(), '{"provider":"email","providers":["email"]}',
-    '{"full_name":"Alex Rivera","role":"technician"}',
+    now(), '{"provider":"email","providers":["email"],"role":"technician"}',
+    '{"full_name":"Alex Rivera"}',
     now(), now(), '', '', '', ''
   ),
   (
@@ -62,8 +65,8 @@ insert into auth.users (
     'authenticated', 'authenticated',
     'technician2@solarisfsm.test',
     crypt('Password123!', gen_salt('bf')),
-    now(), '{"provider":"email","providers":["email"]}',
-    '{"full_name":"Jordan Lee","role":"technician"}',
+    now(), '{"provider":"email","providers":["email"],"role":"technician"}',
+    '{"full_name":"Jordan Lee"}',
     now(), now(), '', '', '', ''
   )
 on conflict (id) do nothing;
@@ -92,7 +95,10 @@ on conflict (provider_id, provider) do nothing;
 insert into public.inventory_items (id, serial_number, model_name, category, status, current_owner_id) values
   ('a0000000-0000-0000-0000-000000000001', 'INV-INV-2201', 'SolarEdge SE5000H Inverter',   'inverter',   'with_technician',   '11111111-1111-1111-1111-111111111103'),
   ('a0000000-0000-0000-0000-000000000002', 'INV-PAN-3410', 'JinkoSolar 410W Panel',         'panel',      'with_technician',   '11111111-1111-1111-1111-111111111103'),
-  ('a0000000-0000-0000-0000-000000000003', 'INV-OPT-1180', 'SolarEdge P505 Optimizer',      'optimizer',  'installed',         '11111111-1111-1111-1111-111111111103'),
+  -- 'installed' means the part is at a customer site, not in anyone's van, so
+  -- it carries no owner — otherwise the warehouse list renders it as "With
+  -- Alex Rivera". The swap RPC clears current_owner_id on install to match.
+  ('a0000000-0000-0000-0000-000000000003', 'INV-OPT-1180', 'SolarEdge P505 Optimizer',      'optimizer',  'installed',         null),
   ('a0000000-0000-0000-0000-000000000004', 'INV-BAT-7702', 'Tesla Powerwall 2',             'battery',    'in_warehouse',      null),
   ('a0000000-0000-0000-0000-000000000005', 'INV-INV-2202', 'SolarEdge SE7600H Inverter',    'inverter',   'in_warehouse',      null),
   ('a0000000-0000-0000-0000-000000000006', 'INV-PAN-3411', 'JinkoSolar 410W Panel',         'panel',      'with_technician',   '11111111-1111-1111-1111-111111111104'),
@@ -163,6 +169,25 @@ insert into public.component_replacements (id, call_id, old_item_serial, new_ite
   ('d0000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000004', 'INV-OPT-0055',
    'a0000000-0000-0000-0000-000000000003', '11111111-1111-1111-1111-111111111103', now() - interval '9 days')
 on conflict (id) do nothing;
+
+-- ---------------------------------------------------------------------------
+-- Component model catalog — populates the Add Item screen's Model Type →
+-- Model dropdowns. Without these rows the "Model Type" picker renders with
+-- zero options and "Model" stays stuck on "Pick a model type first", so the
+-- whole Add Item flow is unusable on a fresh `supabase db reset`.
+--
+-- Categories are lowercase to match what useCreateComponentModel writes and
+-- what the seeded inventory_items above use.
+-- ---------------------------------------------------------------------------
+
+insert into public.component_models (category, model_name) values
+  ('inverter',  'SolarEdge SE5000H Inverter'),
+  ('inverter',  'SolarEdge SE7600H Inverter'),
+  ('panel',     'JinkoSolar 410W Panel'),
+  ('optimizer', 'SolarEdge P505 Optimizer'),
+  ('optimizer', 'SolarEdge P404 Optimizer'),
+  ('battery',   'Tesla Powerwall 2')
+on conflict (category, model_name) do nothing;
 
 -- ---------------------------------------------------------------------------
 -- Test accounts
