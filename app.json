@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "Solaris FSM",
+    "slug": "solaris-fsm",
+    "scheme": "solarisfsm",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "backgroundColor": "#0f172a"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.solaris.fsm",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Solaris FSM uses the camera to scan component serial numbers and capture job photos.",
+        "NSPhotoLibraryUsageDescription": "Solaris FSM can attach existing photos to a service call."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0f172a"
+      },
+      "package": "com.solaris.fsm",
+      "permissions": ["CAMERA", "READ_MEDIA_IMAGES"]
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Solaris FSM uses the camera to scan component serial numbers."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Solaris FSM can attach existing photos to a service call.",
+          "cameraPermission": "Solaris FSM uses the camera to capture job photos."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
